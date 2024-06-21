@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as apigw from "aws-cdk-lib/aws-apigateway";
 import { NodejsFunction, OutputFormat } from "aws-cdk-lib/aws-lambda-nodejs";
 
 const path = require("path");
@@ -66,6 +67,25 @@ export class CdkLambdaStack extends cdk.Stack {
       bundling: {
         format: OutputFormat.ESM,
       },
+    });
+
+    const api = new apigw.RestApi(this, "GetMeasurementApi", {
+      restApiName: "GetMeasurementApi",
+      deployOptions: {
+        tracingEnabled: true,
+        dataTraceEnabled: true,
+        loggingLevel: apigw.MethodLoggingLevel.INFO,
+        metricsEnabled: true,
+      },
+    });
+
+    const uxmeasurement = api.root
+      .addResource("measurement")
+      .addResource("{id}");
+    uxmeasurement.addMethod("GET", new apigw.LambdaIntegration(getmeasurement));
+
+    new cdk.CfnOutput(this, "ApiURL", {
+      value: `${api.url}uxmeasurement`,
     });
   }
 }
